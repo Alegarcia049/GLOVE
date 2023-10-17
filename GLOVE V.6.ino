@@ -1,9 +1,54 @@
 #include <string.h>
 #include <iostream>
-#include <queue>
-using namespace std;
+#include "BluetoothSerial.h"
 
+#define MAX_STRING_LENGTH 100
 
+//#define USE_PIN // Uncomment this to use PIN during pairing. The pin is specified on the line below
+//const char *pin = "1234"; // Change this to more secure PIN.
+String device_name = "ESP32-BT-Slave";
+
+#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+#endif
+
+#if !defined(CONFIG_BT_SPP_ENABLED)
+#error Serial Bluetooth not available or not enabled. It is only available for the ESP32 chip.
+#endif
+
+BluetoothSerial SerialBT;
+void setup() {
+  Serial.begin(9600);
+  pinMode(VIB1, OUTPUT);
+  pinMode(VIB2, OUTPUT);
+  pinMode(VIB3, OUTPUT);
+  pinMode(VIB4, OUTPUT);
+  pinMode(VIB5, OUTPUT);
+  pinMode(VIB6, OUTPUT);
+  pinMode(VIB7, OUTPUT);
+  pinMode(VIB8, OUTPUT);
+  pinMode(VIB9, OUTPUT);
+  pinMode(PUL1, INPUT_PULLUP);
+  pinMode(PUL2, INPUT_PULLUP);
+  pinMode(PUL3, INPUT_PULLUP);
+  pinMode(PUL4, INPUT_PULLUP);
+  pinMode(PUL5, INPUT_PULLUP);
+  pinMode(PUL6, INPUT_PULLUP);
+  pinMode(PUL7, INPUT_PULLUP);
+  pinMode(PUL8, INPUT_PULLUP);
+  pinMode(PUL9, INPUT_PULLUP);
+  pinMode(PUL10, INPUT_PULLUP);
+  pinMode(PUL11, INPUT_PULLUP);
+  pinMode(PUL12, INPUT_PULLUP);
+  SerialBT.begin(device_name); //Bluetooth device name
+  Serial.printf("The device with name \"%s\" is started.\nNow you can pair it with Bluetooth!\n", device_name.c_str());
+
+  //Serial.printf("The device with name \"%s\" and MAC address %s is started.\nNow you can pair it with Bluetooth!\n", device_name.c_str(), SerialBT.getMacString()); // Use this after the MAC method is implemented
+  #ifdef USE_PIN
+    SerialBT.setPin(pin);
+    Serial.println("Using PIN");
+  #endif
+}
 int pulseled[27][2] = {
   // Definimos la matriz de letras, LED y secuencia de pulsos
   { VIB1, 1 },  //aA
@@ -66,30 +111,7 @@ int puls[27][3] = {
   { PUL9, 3, 'Z' },  //zZ
 };
 
-void setup() {
-  Serial.begin(9600);
-  pinMode(VIB1, OUTPUT);
-  pinMode(VIB2, OUTPUT);
-  pinMode(VIB3, OUTPUT);
-  pinMode(VIB4, OUTPUT);
-  pinMode(VIB5, OUTPUT);
-  pinMode(VIB6, OUTPUT);
-  pinMode(VIB7, OUTPUT);
-  pinMode(VIB8, OUTPUT);
-  pinMode(VIB9, OUTPUT);
-  pinMode(PUL1, INPUT_PULLUP);
-  pinMode(PUL2, INPUT_PULLUP);
-  pinMode(PUL3, INPUT_PULLUP);
-  pinMode(PUL4, INPUT_PULLUP);
-  pinMode(PUL5, INPUT_PULLUP);
-  pinMode(PUL6, INPUT_PULLUP);
-  pinMode(PUL7, INPUT_PULLUP);
-  pinMode(PUL8, INPUT_PULLUP);
-  pinMode(PUL9, INPUT_PULLUP);
-  pinMode(PUL10, INPUT_PULLUP);
-  pinMode(PUL11, INPUT_PULLUP);
-  pinMode(PUL12, INPUT_PULLUP);
-}
+
 
 int findletter(int numRows, int value1, int value2) {    ///funcion para encontrar letra pulsada
   for (int m = 0; m < numRows; m++) {
@@ -142,47 +164,7 @@ String armarmsg() {   ///funcion para armar un mensaje con los pulsadores
     if (digitalRead(PUL11) == 0) {  ///funcion de erase
       msg = msg.substring(0, msg.length() - 1);
     }
-    if (digitalRead(PUL12) == 0) {  ///funcion de delete
-      msg.clear();
-    }
     return msg;
-}
-
-std::queue<String> inputQueue;
-
-void addToQueue(String inputt) {   ///funcion para agregar mensajes que van al guante a una cola de procesamiento 
-  inputQueue.push(inputt);
-}
-
-void processQueue() {   ///funcion para procesar los mensajes de la cola
-    String input = inputQueue.front();
-   // std::cout << input << std::endl; //procesa el elemento DESARROLLAR MAS
-    emitir(input);
-    inputQueue.pop();
-    delay(del*10);
-}
-
-void loop() {
-  String mlm;
-  if (Serial.available() == 1) {   //si se recive un mensaje del puerto serie
-      // Leer el mensaje del puerto serie
-    mlm = Serial.readStringUntil('\n');
-    emitir(mlm);
-    addToQueue(mlm);
-    processQueue();
-  }
-  if (digitalRead(PUL13) == 0) {  ///funcion de send
-    mlm = armarmsg();
-    Serial.println(mlm);
-      //expandir desarrollo para inlcuir la comunicacion bt
-      //poner funcion transmitir que hara la comunicacion
-  }
-  if (digitalRead(PUL14) == 0) {   ///funcion de tryout
-    mlm = armarmsg();
-    addToQueue(mlm);
-    processQueue();
-  }
-
 }
 
 void transmitir (String mm){   ///funcion para transmitir el mensaje al puerto de comunicacion
@@ -206,6 +188,39 @@ void emitir (String message){   ///funcion para emitir el mensaje al guante
 
       for (int j = 0; j < message.length(); j++) {
         // Encontrar la entrada correspondiente en la matriz pulseled para la letra
+        if (message[j] == á){
+        message[j] = a;
+        }
+        if (message[j] == Á){
+        message[j] = A;
+        }
+        if (message[j] == é){
+        message[j] = e;
+        }
+        if (message[j] == É){
+        message[j] = E;
+        }
+        if (message[j] == í){
+        message[j] = i;
+        }
+        if (message[j] == Í){
+        message[j] = I;
+        }
+        if (message[j] == ó){
+        message[j] = o;
+        }
+        if (message[j] == Ó){
+        message[j] = O;
+        }
+        if (message[j] == ú){
+        message[j] = u;
+        }
+        if (message[j] == Ú){
+        message[j] = U;
+        }
+        if (message[j] == ñ || message [j] == Ñ){
+        message[j] = n;
+        }
         if (message[j] >= 'a' && message[j] <= 'z') {
           int led = pulseled[message[j] - 'a'][0];
           Serial.println(led);
@@ -269,4 +284,41 @@ void emitir (String message){   ///funcion para emitir el mensaje al guante
 
         delay(del * 10);
       }
+}
+
+void loop() {
+  // Lo que se escribe en el monitor serial se envía al celular 
+  if (Serial.available()) {
+    SerialBT.write(Serial.read());
+  }
+
+  char inputString[MAX_STRING_LENGTH];
+  int index = 0;
+
+  // Lo que se ecribe en el celular se separa letra por letra y se muestra en el monitor serial
+  while (SerialBT.available() && index < MAX_STRING_LENGTH - 1) {
+    // Delay to allow byte to arrive
+    delay(5);
+
+    // Read the incoming byte
+    char incomingByte = SerialBT.read();
+
+    // Add incoming byte to string
+    inputString[index] = incomingByte;
+    index++;
+  }
+
+  // Null-terminate the string
+  inputString[index] = '\0';
+
+  // If string is not empty, print each character on a new line
+  if (index > 0) {
+    for (int i = 0; i < index; i++) {
+      Serial.println(inputString[i]);
+    }
+    emitir(inputString);
+  }
+  if (digitalRead(PUL12) == 0) {  ///funcion de send
+    Serial.println(armarmsg());
+  }
 }
