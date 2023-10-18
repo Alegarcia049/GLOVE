@@ -1,6 +1,7 @@
 #include <string.h>
 #include <iostream>
 #include "BluetoothSerial.h"
+#include <future>
 
 #define MAX_STRING_LENGTH 100
 
@@ -124,8 +125,8 @@ int findletter(int numRows, int value1, int value2) {    ///funcion para encontr
   return -1;
 }
 
-String armarmsg() {   ///funcion para armar un mensaje con los pulsadores
-  String msg;
+String msg;
+void armarmsg() {   ///funcion para armar un mensaje con los pulsadores
   char letter;
   int i = 0;
     //esperar a que algun pulsador este preseionado
@@ -164,21 +165,10 @@ String armarmsg() {   ///funcion para armar un mensaje con los pulsadores
     if (digitalRead(PUL11) == 0) {  ///funcion de erase
       msg = msg.substring(0, msg.length() - 1);
     }
-    return msg;
-}
-
-void transmitir (String mm){   ///funcion para transmitir el mensaje al puerto de comunicacion
-  
-}
-void alerta (){   ///funcion para alertar la entrada de un mensaje mendiante pulsos
-      digitalWrite(22 && 33 && 23 && 25 && 27 && 26 && 14 && 13 && 12, HIGH);
-      delay(del*2);
-      digitalWrite(22 && 33 && 23 && 25 && 27 && 26 && 14 && 13 && 12, LOW);
-      delay(del*2);
-      digitalWrite(22 && 33 && 23 && 25 && 27 && 26 && 14 && 13 && 12, HIGH);
-      delay(del*2);
-      digitalWrite(22 && 33 && 23 && 25 && 27 && 26 && 14 && 13 && 12, LOW);
-      delay(del*2);
+    if (digitalRead(PUL12) == 0) {  ///funcion de send
+      Serial.println(armarmsg());
+      msg.clear();
+    }
 }
 
 void emitir (String message){   ///funcion para emitir el mensaje al guante
@@ -188,38 +178,38 @@ void emitir (String message){   ///funcion para emitir el mensaje al guante
 
       for (int j = 0; j < message.length(); j++) {
         // Encontrar la entrada correspondiente en la matriz pulseled para la letra
-        if (message[j] == á){
-        message[j] = a;
+        if (message[j] == 'á'){
+        message[j] = 'a';
         }
-        if (message[j] == Á){
-        message[j] = A;
+        if (message[j] == 'Á'){
+        message[j] = 'A';
         }
-        if (message[j] == é){
-        message[j] = e;
+        if (message[j] == 'é'){
+        message[j] = 'e';
         }
-        if (message[j] == É){
-        message[j] = E;
+        if (message[j] == 'É'){
+        message[j] = 'E';
         }
-        if (message[j] == í){
-        message[j] = i;
+        if (message[j] == 'í'){
+        message[j] = 'i';
         }
-        if (message[j] == Í){
-        message[j] = I;
+        if (message[j] == 'Í'){
+        message[j] = 'I';
         }
-        if (message[j] == ó){
-        message[j] = o;
+        if (message[j] == 'ó'){
+        message[j] = 'o';
         }
-        if (message[j] == Ó){
-        message[j] = O;
+        if (message[j] == 'Ó'){
+        message[j] = 'O';
         }
-        if (message[j] == ú){
-        message[j] = u;
+        if (message[j] == 'ú'){
+        message[j] = 'u';
         }
-        if (message[j] == Ú){
-        message[j] = U;
+        if (message[j] == 'Ú'){
+        message[j] = 'U';
         }
-        if (message[j] == ñ || message [j] == Ñ){
-        message[j] = n;
+        if (message[j] == 'ñ' || message [j] == 'Ñ'){
+        message[j] = 'ni';
         }
         if (message[j] >= 'a' && message[j] <= 'z') {
           int led = pulseled[message[j] - 'a'][0];
@@ -281,17 +271,15 @@ void emitir (String message){   ///funcion para emitir el mensaje al guante
             delay(del * 2);
           }
         }
-
         delay(del * 10);
       }
 }
 
 void loop() {
-  // Lo que se escribe en el monitor serial se envía al celular 
-  if (Serial.available()) {
+  armarmsg();  //Constantemente se llama a la función de armar mensaje para escribir con el guante en caso de usarse
+  if (Serial.available()) {  // Lo que se escribe en el monitor serial (viene del guante) se envía al celular 
     SerialBT.write(Serial.read());
   }
-
   char inputString[MAX_STRING_LENGTH];
   int index = 0;
 
@@ -316,9 +304,6 @@ void loop() {
     for (int i = 0; i < index; i++) {
       Serial.println(inputString[i]);
     }
-    emitir(inputString);
-  }
-  if (digitalRead(PUL12) == 0) {  ///funcion de send
-    Serial.println(armarmsg());
+    emitir(inputString); //PROBAR SI FUNCIONA EL CHAR EN LA FUNCION QUE TOMA STRING
   }
 }
