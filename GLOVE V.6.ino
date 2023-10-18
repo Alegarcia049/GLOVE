@@ -1,7 +1,26 @@
+#include <string.h>
+#include <iostream>
+#include "BluetoothSerial.h"
+#include <future>
+
+#define MAX_STRING_LENGTH 100
+
+//#define USE_PIN // Uncomment this to use PIN during pairing. The pin is specified on the line below
+//const char *pin = "1234"; // Change this to more secure PIN.
+String device_name = "ESP32-BT-Slave";
+
+#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+#endif
+
+#if !defined(CONFIG_BT_SPP_ENABLED)
+#error Serial Bluetooth not available or not enabled. It is only available for the ESP32 chip.
+#endif
+
 int PUL1 = 36;   //Pulsador de a,b,c  ERROR
 int PUL2 = 39;   //Pulsador de d,e,f  ERROR
 int PUL5 = 34;   //Pulsador de g,h,i  ERROR
-int PUL11 = 35;   //Pulsador de j,k,l 
+int PUL11 = 35;   //Pulsador de j,k,l ERROR
 int PUL3 = 32;   //Pulsador de m,n,ñ
 int PUL7 = 33;   //Pulsador de o,p,q
 int PUL8 = 25;   //Pulsador de r,s,t
@@ -23,26 +42,8 @@ int VIB9 = 4;
 
 int del = 100;
 
-#include <string.h>
-#include <iostream>
-#include "BluetoothSerial.h"
-#include <future>
-
-#define MAX_STRING_LENGTH 100
-
-//#define USE_PIN // Uncomment this to use PIN during pairing. The pin is specified on the line below
-//const char *pin = "1234"; // Change this to more secure PIN.
-String device_name = "ESP32-BT-Slave";
-
-#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
-#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
-#endif
-
-#if !defined(CONFIG_BT_SPP_ENABLED)
-#error Serial Bluetooth not available or not enabled. It is only available for the ESP32 chip.
-#endif
-
 BluetoothSerial SerialBT;
+
 void setup() {
   Serial.begin(115200);
   pinMode(VIB1, OUTPUT);
@@ -68,12 +69,11 @@ void setup() {
   pinMode(PUL12, INPUT_PULLUP);
   SerialBT.begin(device_name); //Bluetooth device name
   Serial.printf("The device with name \"%s\" is started.\nNow you can pair it with Bluetooth!\n", device_name.c_str());
-
   //Serial.printf("The device with name \"%s\" and MAC address %s is started.\nNow you can pair it with Bluetooth!\n", device_name.c_str(), SerialBT.getMacString()); // Use this after the MAC method is implemented
-  #ifdef USE_PIN
-    SerialBT.setPin(pin);
-    Serial.println("Using PIN");
-  #endif
+#ifdef USE_PIN
+  SerialBT.setPin(pin);
+  Serial.println("Using PIN");
+#endif
 }
 int pulseled[27][2] = {
   // Definimos la matriz de letras, LED y secuencia de pulsos
@@ -154,181 +154,165 @@ String msg;
 void armarmsg() {   ///funcion para armar un mensaje con los pulsadores
   char letter;
   int i = 0;
-    //esperar a que algun pulsador este preseionado
-    for (i = 0; i <= 27; i++) {    ///ciclo que se repite para buscar alguna entrada de letras a traves de los pulsadores presionados
-      if (digitalRead(puls[i][0]) == 0) {
-        while (digitalRead(puls[i][0]) == 0) {
-          //esperar a que se despulse
-        }
-        unsigned long startTime = millis();
-        int num = 1;
-
-        while (num < 3) {
-          if (millis() - startTime >= del) {  // han pasado 100ms
-            break;
-          }
-          // en caso de ser pulsado de nuevo
-          if (digitalRead(puls[i][0]) == 0) {  // por ejemplo, si se presiona un botón
-            num++;                             // aumentar contador de pulsos
-            if (num == 3) {
-              break;  // salir del ciclo
-            }
-            while (digitalRead(puls[i][0]) == 0) {
-              //esperar a que se despulse
-            }
-            startTime = millis();  // reiniciar tiempo
-          }
-        }
-        letter = findletter(27, puls[i][0], num);
-        msg += letter;
+  //esperar a que algun pulsador este preseionado
+  for (i = 0; i <= 27; i++) {    ///ciclo que se repite para buscar alguna entrada de letras a traves de los pulsadores presionados
+    if (digitalRead(puls[i][0]) == 0) {
+      while (digitalRead(puls[i][0]) == 0) {
+        //esperar a que se despulse
       }
-    }
-    if (digitalRead(PUL10) == 0) {  ///funcion de barra espaciadora
-      letter = ' ';
+      unsigned long startTime = millis();
+      int num = 1;
+
+      while (num < 3) {
+        if (millis() - startTime >= del) {  // han pasado 100ms
+          break;
+        }
+        // en caso de ser pulsado de nuevo
+        if (digitalRead(puls[i][0]) == 0) {  // por ejemplo, si se presiona un botón
+          num++;                             // aumentar contador de pulsos
+          if (num == 3) {
+            break;  // salir del ciclo
+          }
+          while (digitalRead(puls[i][0]) == 0) {
+            //esperar a que se despulse
+          }
+          startTime = millis();  // reiniciar tiempo
+        }
+      }
+      letter = findletter(27, puls[i][0], num);
       msg += letter;
     }
-    if (digitalRead(PUL11) == 0) {  ///funcion de erase
-      msg = msg.substring(0, msg.length() - 1);
-    }
-    if (digitalRead(PUL12) == 0) {  ///funcion de send
-      Serial.println(armarmsg());
-      msg.clear();
-    }
+  }
+  if (digitalRead(PUL10) == 0) {  ///funcion de barra espaciadora
+    letter = ' ';
+    msg += letter;
+  }
+  if (digitalRead(PUL11) == 0) {  ///funcion de erase
+    msg = msg.substring(0, msg.length() - 1);
+  }
+  if (digitalRead(PUL12) == 0) {  ///funcion de send
+    Serial.println(msg);
+    SerialBT.print(msg);
+    msg.clear();
+  }
 }
 
-void emitir (String message){   ///funcion para emitir el mensaje al guante
+void emitir (String message) {  ///funcion para emitir el mensaje al guante
 
-      Serial.println(message);
-      Serial.println(message.length());
+  Serial.println(message);
+  Serial.println(message.length());
 
-      for (int j = 0; j < message.length(); j++) {
-        // Encontrar la entrada correspondiente en la matriz pulseled para la letra
-        if (message[j] == 'á'){
-        message[j] = 'a';
-        }
-        if (message[j] == 'Á'){
-        message[j] = 'A';
-        }
-        if (message[j] == 'é'){
-        message[j] = 'e';
-        }
-        if (message[j] == 'É'){
-        message[j] = 'E';
-        }
-        if (message[j] == 'í'){
-        message[j] = 'i';
-        }
-        if (message[j] == 'Í'){
-        message[j] = 'I';
-        }
-        if (message[j] == 'ó'){
-        message[j] = 'o';
-        }
-        if (message[j] == 'Ó'){
-        message[j] = 'O';
-        }
-        if (message[j] == 'ú'){
-        message[j] = 'u';
-        }
-        if (message[j] == 'Ú'){
-        message[j] = 'U';
-        }
-        if (message[j] == 'ñ' || message [j] == 'Ñ'){
-        message[j] = 'ni';
-        }
-        if (message[j] >= 'a' && message[j] <= 'z') {
-          int led = pulseled[message[j] - 'a'][0];
-          Serial.println(led);
-          if (pulseled[message[j] - 'a'][1] == 1) {
-            digitalWrite(led, 1);
-            delay(del);
-            digitalWrite(led, 0);
-            delay(del * 2);
-          }
-          if (pulseled[message[j] - 'a'][1] == 2) {
-            digitalWrite(led, 1);
-            delay(del);
-            digitalWrite(led, 0);
-            delay(del);
-            digitalWrite(led, 1);
-            delay(del);
-            digitalWrite(led, 0);
-            delay(del * 2);
-          }
-          if (pulseled[message[j] - 'a'][1] == 3) {
-            digitalWrite(led, 1);
-            delay(del);
-            digitalWrite(led, 0);
-            delay(del);
-            digitalWrite(led, 1);
-            delay(del);
-            digitalWrite(led, 0);
-            delay(del);
-            digitalWrite(led, 1);
-            delay(del);
-            digitalWrite(led, 0);
-            delay(del * 2);
-          }
-        }
-        if (message[j] >= 'A' && message[j] <= 'Z') {
-          int led = pulseled[message[j] - 'A'][0];
-          Serial.println(led);
-          if (pulseled[message[j] - 'A'][1] == 1) {
-            digitalWrite(led, 1);
-            delay(del);
-            digitalWrite(led, 0);
-            delay(del * 2);
-          }
-          if (pulseled[message[j] - 'A'][1] == 2) {
-            digitalWrite(led, 1);
-            delay(del * 3);
-            digitalWrite(led, 0);
-            delay(del * 2);
-          }
-          if (pulseled[message[j] - 'A'][1] == 3) {
-            digitalWrite(led, 1);
-            delay(del);
-            digitalWrite(led, 0);
-            delay(del);
-            digitalWrite(led, 1);
-            delay(del);
-            digitalWrite(led, 0);
-            delay(del * 2);
-          }
-        }
-        delay(del * 10);
+  for (int j = 0; j < message.length(); j++) {
+    // Encontrar la entrada correspondiente en la matriz pulseled para la letra
+    if (message[j] == 'á') {
+      message[j] = 'a';
+    }
+    if (message[j] == 'Á') {
+      message[j] = 'A';
+    }
+    if (message[j] == 'é') {
+      message[j] = 'e';
+    }
+    if (message[j] == 'É') {
+      message[j] = 'E';
+    }
+    if (message[j] == 'í') {
+      message[j] = 'i';
+    }
+    if (message[j] == 'Í') {
+      message[j] = 'I';
+    }
+    if (message[j] == 'ó') {
+      message[j] = 'o';
+    }
+    if (message[j] == 'Ó') {
+      message[j] = 'O';
+    }
+    if (message[j] == 'ú') {
+      message[j] = 'u';
+    }
+    if (message[j] == 'Ú') {
+      message[j] = 'U';
+    }
+    if (message[j] == 'ñ' || message [j] == 'Ñ') {
+      message[j] = 'ni';
+    }
+    if (message[j] >= 'a' && message[j] <= 'z') {
+      int led = pulseled[message[j] - 'a'][0];
+      Serial.println(led);
+      if (pulseled[message[j] - 'a'][1] == 1) {
+        digitalWrite(led, 1);
+        delay(del);
+        digitalWrite(led, 0);
+        delay(del * 2);
       }
+      if (pulseled[message[j] - 'a'][1] == 2) {
+        digitalWrite(led, 1);
+        delay(del);
+        digitalWrite(led, 0);
+        delay(del);
+        digitalWrite(led, 1);
+        delay(del);
+        digitalWrite(led, 0);
+        delay(del * 2);
+      }
+      if (pulseled[message[j] - 'a'][1] == 3) {
+        digitalWrite(led, 1);
+        delay(del);
+        digitalWrite(led, 0);
+        delay(del);
+        digitalWrite(led, 1);
+        delay(del);
+        digitalWrite(led, 0);
+        delay(del);
+        digitalWrite(led, 1);
+        delay(del);
+        digitalWrite(led, 0);
+        delay(del * 2);
+      }
+    }
+    if (message[j] >= 'A' && message[j] <= 'Z') {
+      int led = pulseled[message[j] - 'A'][0];
+      Serial.println(led);
+      if (pulseled[message[j] - 'A'][1] == 1) {
+        digitalWrite(led, 1);
+        delay(del);
+        digitalWrite(led, 0);
+        delay(del * 2);
+      }
+      if (pulseled[message[j] - 'A'][1] == 2) {
+        digitalWrite(led, 1);
+        delay(del * 3);
+        digitalWrite(led, 0);
+        delay(del * 2);
+      }
+      if (pulseled[message[j] - 'A'][1] == 3) {
+        digitalWrite(led, 1);
+        delay(del);
+        digitalWrite(led, 0);
+        delay(del);
+        digitalWrite(led, 1);
+        delay(del);
+        digitalWrite(led, 0);
+        delay(del * 2);
+      }
+    }
+    delay(del * 10);
+  }
 }
 
 void loop() {
-  armarmsg();  //Constantemente se llama a la función de armar mensaje para escribir con el guante en caso de usarse
-  if (Serial.available()) {  // Lo que se escribe en el monitor serial (viene del guante) se envía al celular 
-    SerialBT.write(Serial.read());
-  }
-  char inputString[MAX_STRING_LENGTH];
-  int index = 0;
-
-  // Lo que se ecribe en el celular se separa letra por letra y se muestra en el monitor serial
-  while (SerialBT.available() && index < MAX_STRING_LENGTH - 1) {
-    // Delay to allow byte to arrive
-    delay(5);
-
-    // Read the incoming byte
-    char incomingByte = SerialBT.read();
-
-    // Add incoming byte to string
-    inputString[index] = incomingByte;
-    index++;
+ // armarmsg();  //Constantemente se llama a la función de armar mensaje para escribir con el guante en caso de usarse
+  if (SerialBT.available()) {
+    String data = SerialBT.readString();
+    Serial.print("Datos recibidos desde Bluetooth: ");
+    Serial.println(data);
   }
 
-  // Null-terminate the string
-  inputString[index] = '\0';
-
-  // If string is not empty, print each character on a new line
-  if (index > 0) {
-    for (int i = 0; i < index; i++) {
-      Serial.println(inputString[i]);
-    }
-    emitir(inputString); //PROBAR SI FUNCIONA EL CHAR EN LA FUNCION QUE TOMA STRING
+  // Enviar datos al Bluetooth
+  if (Serial.available()) {
+    String data = Serial.readString();
+    SerialBT.print(data);
+    Serial.println(data);
   }
 }
